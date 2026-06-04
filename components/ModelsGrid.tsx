@@ -1,22 +1,31 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import type { ModelData } from "@/app/api/models/route";
+import type { ModelEntry, ModelSource } from "@/lib/model-types";
+import { SOURCE_META } from "@/lib/model-types";
 import ModelCard from "./ModelCard";
 
 const MODALITY_FILTERS = ["All", "Text", "Multimodal (Vision)", "Multimodal (Vision + Video)", "Multimodal (Audio)"];
 
-export default function ModelsGrid({ models }: { models: ModelData[] }) {
+export default function ModelsGrid({ models }: { models: ModelEntry[] }) {
   const [query, setQuery] = useState("");
   const [modality, setModality] = useState("All");
+  const [keyFilter, setKeyFilter] = useState<"all" | "no-key" | "key-required">("all");
+  const [source, setSource] = useState<ModelSource | "all">("all");
   const [sortBy, setSortBy] = useState<"newest" | "context" | "name">("newest");
+
+  const sources = useMemo(() => {
+    const set = new Set(models.map((m) => m.source));
+    return Array.from(set).sort();
+  }, [models]);
 
   const filtered = useMemo(() => {
     let list = models;
 
-    if (modality !== "All") {
-      list = list.filter((m) => m.modality === modality);
-    }
+    if (source !== "all") list = list.filter((m) => m.source === source);
+    if (modality !== "All") list = list.filter((m) => m.modality === modality);
+    if (keyFilter === "no-key") list = list.filter((m) => !m.requiresKey);
+    if (keyFilter === "key-required") list = list.filter((m) => m.requiresKey);
 
     if (query.trim()) {
       const q = query.toLowerCase();
@@ -33,20 +42,18 @@ export default function ModelsGrid({ models }: { models: ModelData[] }) {
     if (sortBy === "context") return [...list].sort((a, b) => b.contextLength - a.contextLength);
     if (sortBy === "name") return [...list].sort((a, b) => a.name.localeCompare(b.name));
     return list;
-  }, [models, query, modality, sortBy]);
+  }, [models, query, modality, keyFilter, source, sortBy]);
 
-  const providers = useMemo(() => {
-    const set = new Set(models.map((m) => m.providerDisplay));
-    return Array.from(set).sort();
-  }, [models]);
+  const noKeyCount = useMemo(() => models.filter((m) => !m.requiresKey).length, [models]);
+  const keyCount = useMemo(() => models.filter((m) => m.requiresKey).length, [models]);
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Search + sort bar */}
+    <div className="flex flex-col gap-5">
+      {/* search + sort row */}
       <div className="flex flex-col sm:flex-row gap-3">
         <input
           type="search"
-          placeholder="Search models, providers…"
+          placeholder="Search models, providers, capabilities…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="brutal-input flex-1 px-4 py-3 font-mono text-sm"
@@ -62,16 +69,59 @@ export default function ModelsGrid({ models }: { models: ModelData[] }) {
         </select>
       </div>
 
-      {/* Modality filter pills */}
+      {/* key filter */}
       <div className="flex flex-wrap gap-2">
+        <span className="text-[10px] font-black uppercase tracking-widest text-[#555] self-center mr-1">Access:</span>
+        {(["all", "no-key", "key-required"] as const).map((k) => (
+          <button
+            key={k}
+            onClick={() => setKeyFilter(k)}
+            className={`brutal-btn text-xs px-3 py-1.5 ${
+              keyFilter === k ? "bg-[#0A0A0A] text-white" : "bg-white text-[#0A0A0A]"
+            }`}
+          >
+            {k === "all" && `All (${models.length})`}
+            {k === "no-key" && `No Key (${noKeyCount})`}
+            {k === "key-required" && `Free Key (${keyCount})`}
+          </button>
+        ))}
+      </div>
+
+      {/* source filter */}
+      <div className="flex flex-wrap gap-2">
+        <span className="text-[10px] font-black uppercase tracking-widest text-[#555] self-center mr-1">Source:</span>
+        <button
+          onClick={() => setSource("all")}
+          className={`brutal-btn text-xs px-3 py-1.5 ${source === "all" ? "bg-[#0A0A0A] text-white" : "bg-white text-[#0A0A0A]"}`}
+        >
+          All
+        </button>
+        {sources.map((s) => (
+          <button
+            key={s}
+            onClick={() => setSource(s)}
+            className={`brutal-btn text-xs px-3 py-1.5 flex items-center gap-1.5 ${
+              source === s ? "bg-[#0A0A0A] text-white" : "bg-white text-[#0A0A0A]"
+            }`}
+          >
+            <span
+              className="w-2 h-2 rounded-full border border-current"
+              style={{ background: source === s ? "white" : SOURCE_META[s].color }}
+            />
+            {SOURCE_META[s].label}
+          </button>
+        ))}
+      </div>
+
+      {/* modality filter */}
+      <div className="flex flex-wrap gap-2">
+        <span className="text-[10px] font-black uppercase tracking-widest text-[#555] self-center mr-1">Type:</span>
         {MODALITY_FILTERS.map((f) => (
           <button
             key={f}
             onClick={() => setModality(f)}
             className={`brutal-btn text-xs px-3 py-1.5 ${
-              modality === f
-                ? "bg-[#0A0A0A] text-white"
-                : "bg-[#FFE500] text-[#0A0A0A]"
+              modality === f ? "bg-[#FFE500] text-[#0A0A0A]" : "bg-white text-[#0A0A0A]"
             }`}
           >
             {f}
@@ -79,16 +129,13 @@ export default function ModelsGrid({ models }: { models: ModelData[] }) {
         ))}
       </div>
 
-      {/* Stats line */}
+      {/* stats */}
       <p className="font-mono text-xs text-[#555] border-b-2 border-[#0A0A0A] pb-2">
-        <span className="font-black text-[#0A0A0A]">{filtered.length}</span> models
+        <span className="font-black text-[#0A0A0A]">{filtered.length}</span> models shown
         {query && ` matching "${query}"`}
-        {modality !== "All" && ` · ${modality}`}
-        {" "}·{" "}
-        <span className="font-black text-[#0A0A0A]">{providers.length}</span> providers
       </p>
 
-      {/* Grid */}
+      {/* grid */}
       {filtered.length === 0 ? (
         <div
           className="text-center py-20 border-2 border-[#0A0A0A] bg-white"

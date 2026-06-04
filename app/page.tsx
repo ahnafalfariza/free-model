@@ -1,11 +1,11 @@
-import type { ModelData } from "@/app/api/models/route";
+import type { ModelEntry, ModelSource } from "@/lib/model-types";
+import { SOURCE_META } from "@/lib/model-types";
+import { STATIC_MODELS } from "@/lib/static-models";
 import ModelsGrid from "@/components/ModelsGrid";
-import ProviderCard from "@/components/ProviderCard";
-import { FREE_PROVIDERS } from "@/lib/providers";
 
 export const revalidate = 3600;
 
-async function getModels(): Promise<{ models: ModelData[]; count: number; updatedAt: number }> {
+async function getOpenRouterModels(): Promise<ModelEntry[]> {
   try {
     const res = await fetch("https://openrouter.ai/api/v1/models", {
       next: { revalidate: 3600 },
@@ -48,7 +48,7 @@ async function getModels(): Promise<{ models: ModelData[]; count: number; update
     };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const models: ModelData[] = json.data.filter(isFree).map((m: any): ModelData => {
+    return json.data.filter(isFree).map((m: any): ModelEntry => {
       const providerSlug = m.id.split("/")[0];
       const entry = PROVIDER_MAP[providerSlug];
       const cleanId = m.id.replace(":free", "");
@@ -68,32 +68,36 @@ async function getModels(): Promise<{ models: ModelData[]; count: number; update
         provider: providerSlug,
         providerDisplay: entry?.display ?? providerSlug,
         providerUrl: entry?.url ?? `https://openrouter.ai/${cleanId}`,
-        openRouterUrl: `https://openrouter.ai/${cleanId}`,
+        modelUrl: `https://openrouter.ai/${cleanId}`,
+        source: "openrouter" as ModelSource,
+        requiresKey: false,
+        signupUrl: "https://openrouter.ai",
         createdAt: m.created ?? 0,
-      };
-    }).sort((a: ModelData, b: ModelData) => b.createdAt - a.createdAt);
-
-    return { models, count: models.length, updatedAt: Date.now() };
+      } as ModelEntry;
+    });
   } catch {
-    return { models: [], count: 0, updatedAt: Date.now() };
+    return [];
   }
 }
 
 const TICKER_ITEMS = [
   "100% FREE",
-  "NO API KEY REQUIRED",
-  "REAL-TIME DATA",
-  "POWERED BY OPENROUTER",
-  "TEXT · VISION · AUDIO",
+  "NO KEY FOR OPENROUTER",
+  "GROQ · GOOGLE · CEREBRAS",
+  "NVIDIA · GITHUB · MISTRAL",
   "UPDATED HOURLY",
+  "10 PROVIDERS",
+  "TEXT · VISION · AUDIO",
 ];
 
 export default async function HomePage() {
-  const { models, count } = await getModels();
+  const [orModels] = await Promise.all([getOpenRouterModels()]);
+  const allModels: ModelEntry[] = [...orModels, ...STATIC_MODELS];
 
-  const multimodalCount = models.filter((m) => m.modality !== "Text").length;
-  const providers = new Set(models.map((m) => m.provider)).size;
-  const maxContext = models.reduce((max, m) => Math.max(max, m.contextLength), 0);
+  const total = allModels.length;
+  const noKeyCount = allModels.filter((m) => !m.requiresKey).length;
+  const multimodalCount = allModels.filter((m) => m.modality !== "Text").length;
+  const providerCount = new Set(allModels.map((m) => m.source)).size;
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -132,14 +136,14 @@ export default async function HomePage() {
       {/* ── Ticker ── */}
       <div
         className="overflow-hidden py-2"
-        style={{
-          borderBottom: "2.5px solid #0A0A0A",
-          background: "#0A0A0A",
-        }}
+        style={{ borderBottom: "2.5px solid #0A0A0A", background: "#0A0A0A" }}
       >
         <div className="marquee-track select-none">
           {[...TICKER_ITEMS, ...TICKER_ITEMS].map((item, i) => (
-            <span key={i} className="flex items-center gap-4 px-6 text-xs font-black uppercase tracking-widest text-[#FFE500] whitespace-nowrap">
+            <span
+              key={i}
+              className="flex items-center gap-4 px-6 text-xs font-black uppercase tracking-widest text-[#FFE500] whitespace-nowrap"
+            >
               {item}
               <span className="text-[#FFE500]/40">◆</span>
             </span>
@@ -158,119 +162,87 @@ export default async function HomePage() {
               >
                 ● Live
               </span>
-              <span className="font-mono text-xs text-[#555]">via OpenRouter API</span>
+              <span className="font-mono text-xs text-[#555]">
+                OpenRouter API + 9 curated providers
+              </span>
             </div>
             <h1 className="text-5xl sm:text-7xl font-black uppercase leading-none tracking-tighter text-[#0A0A0A]">
               Free AI
               <br />
               <span
-                className="relative inline-block"
-                style={{
-                  WebkitTextStroke: "2.5px #0A0A0A",
-                  color: "#FFE500",
-                }}
+                style={{ WebkitTextStroke: "2.5px #0A0A0A", color: "#FFE500" }}
               >
                 Models.
               </span>
             </h1>
             <p className="text-base sm:text-lg font-medium text-[#333] max-w-xl leading-relaxed">
-              Every AI model you can use right now — completely free.
-              No credit card. No API key required for most.
-              Updated hourly from{" "}
-              <a href="https://openrouter.ai" target="_blank" rel="noopener noreferrer" className="font-bold underline decoration-2 hover:text-[#FF4D00]">
-                OpenRouter
-              </a>.
+              Every AI model you can use for free — across OpenRouter, Groq, Google AI Studio, Cerebras, NVIDIA NIM, and more.
+              Filter by access type, source, and modality.
             </p>
           </div>
 
-          {/* Stats strip */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 mt-10 border-2 border-[#0A0A0A]" style={{ boxShadow: "4px 4px 0 #0A0A0A" }}>
+          {/* Stats */}
+          <div
+            className="grid grid-cols-2 sm:grid-cols-4 gap-0 mt-10 border-2 border-[#0A0A0A]"
+            style={{ boxShadow: "4px 4px 0 #0A0A0A" }}
+          >
             {[
-              { label: "Free Models", value: count },
-              { label: "Providers", value: providers },
-              { label: "Multimodal", value: multimodalCount },
-              { label: "Max Context", value: maxContext >= 1_000_000 ? `${(maxContext / 1_000_000).toFixed(0)}M` : `${Math.round(maxContext / 1_000)}K` },
+              { label: "Total Models", value: total, bg: "#FFE500" },
+              { label: "No Key Needed", value: noKeyCount, bg: "white" },
+              { label: "Multimodal", value: multimodalCount, bg: "white" },
+              { label: "Providers", value: providerCount, bg: "white" },
             ].map((s, i) => (
               <div
                 key={s.label}
-                className={`flex flex-col items-center justify-center py-6 px-4 ${i < 3 ? "border-r-2 border-[#0A0A0A]" : ""} ${i < 2 ? "max-sm:border-b-2 max-sm:border-[#0A0A0A]" : ""}`}
-                style={{ background: i === 0 ? "#FFE500" : "white" }}
+                className={`flex flex-col items-center justify-center py-6 px-4 ${i < 3 ? "sm:border-r-2 sm:border-[#0A0A0A]" : ""} ${i % 2 === 0 ? "max-sm:border-r-2 max-sm:border-[#0A0A0A]" : ""} ${i < 2 ? "border-b-2 sm:border-b-0 border-[#0A0A0A]" : ""}`}
+                style={{ background: s.bg }}
               >
                 <span className="text-3xl sm:text-4xl font-black text-[#0A0A0A] leading-none">{s.value}</span>
                 <span className="text-[10px] font-black uppercase tracking-widest text-[#555] mt-1">{s.label}</span>
               </div>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* ── Models Grid ── */}
-      <main className="flex-1 px-6 py-10">
-        <div className="max-w-6xl mx-auto">
-          <ModelsGrid models={models} />
-        </div>
-      </main>
-
-      {/* ── More Providers ── */}
-      <section className="px-6 py-12 border-t-2 border-[#0A0A0A]" style={{ background: "#F0EEE6" }}>
-        <div className="max-w-6xl mx-auto flex flex-col gap-8">
-          {/* section header */}
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-            <div>
+          {/* provider legend */}
+          <div className="flex flex-wrap gap-2 mt-5">
+            {(Object.entries(SOURCE_META) as [ModelSource, typeof SOURCE_META[ModelSource]][]).map(([key, meta]) => (
               <span
-                className="text-[10px] font-black uppercase tracking-widest border-2 border-[#0A0A0A] px-2 py-0.5 bg-[#FF4D00] text-white inline-block mb-3"
-                style={{ boxShadow: "2px 2px 0 #0A0A0A" }}
+                key={key}
+                className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide border border-[#0A0A0A] px-2 py-1 bg-white"
               >
-                More Sources
+                <span className="w-2 h-2 rounded-full border border-[#0A0A0A]" style={{ background: meta.color }} />
+                {meta.label}
               </span>
-              <h2 className="text-3xl sm:text-4xl font-black uppercase tracking-tighter leading-none">
-                More Free<br />Providers
-              </h2>
-              <p className="text-sm text-[#555] mt-2 max-w-lg">
-                These providers aren&apos;t on OpenRouter but offer generous free tiers.
-                Requires a free API key — no credit card needed.
-              </p>
-            </div>
-            <div className="flex flex-col gap-1 text-right shrink-0">
-              <p className="font-mono text-xs text-[#555]">Sources:</p>
-              <a href="https://github.com/cheahjs/free-llm-api-resources" target="_blank" rel="noopener noreferrer" className="font-mono text-xs font-bold underline hover:text-[#FF4D00]">cheahjs/free-llm-api-resources</a>
-              <a href="https://github.com/mnfst/awesome-free-llm-apis" target="_blank" rel="noopener noreferrer" className="font-mono text-xs font-bold underline hover:text-[#FF4D00]">mnfst/awesome-free-llm-apis</a>
-              <a href="https://freellm.net" target="_blank" rel="noopener noreferrer" className="font-mono text-xs font-bold underline hover:text-[#FF4D00]">freellm.net</a>
-            </div>
-          </div>
-
-          {/* provider grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {FREE_PROVIDERS.map((provider) => (
-              <ProviderCard key={provider.slug} provider={provider} />
             ))}
           </div>
         </div>
       </section>
 
+      {/* ── Unified Models Grid ── */}
+      <main className="flex-1 px-6 py-10">
+        <div className="max-w-6xl mx-auto">
+          <ModelsGrid models={allModels} />
+        </div>
+      </main>
+
       {/* ── Footer ── */}
       <footer
         className="px-6 py-6 mt-4"
-        style={{
-          borderTop: "2.5px solid #0A0A0A",
-          background: "#0A0A0A",
-        }}
+        style={{ borderTop: "2.5px solid #0A0A0A", background: "#0A0A0A" }}
       >
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="font-mono text-xs text-[#FFE500]">
-            Data: {" "}
+            Data:{" "}
             <a href="https://openrouter.ai" target="_blank" rel="noopener noreferrer" className="underline font-black">OpenRouter</a>
-            {" "}·{" "}
+            {" · "}
             <a href="https://github.com/cheahjs/free-llm-api-resources" target="_blank" rel="noopener noreferrer" className="underline font-black">cheahjs</a>
-            {" "}·{" "}
+            {" · "}
             <a href="https://github.com/mnfst/awesome-free-llm-apis" target="_blank" rel="noopener noreferrer" className="underline font-black">mnfst</a>
-            {" "}·{" "}
+            {" · "}
             <a href="https://freellm.net" target="_blank" rel="noopener noreferrer" className="underline font-black">freellm.net</a>
-            . Updated hourly.
+            . OpenRouter updated hourly.
           </p>
-          <p className="font-mono text-xs text-[#555]">
-            free-models.vercel.app
-          </p>
+          <p className="font-mono text-xs text-[#555]">free-model-drab.vercel.app</p>
         </div>
       </footer>
     </div>
