@@ -1,5 +1,7 @@
 import type { ModelData } from "@/app/api/models/route";
 import ModelsGrid from "@/components/ModelsGrid";
+import ProviderCard from "@/components/ProviderCard";
+import { FREE_PROVIDERS } from "@/lib/providers";
 
 export const revalidate = 3600;
 
@@ -209,6 +211,43 @@ export default async function HomePage() {
         </div>
       </main>
 
+      {/* ── More Providers ── */}
+      <section className="px-6 py-12 border-t-2 border-[#0A0A0A]" style={{ background: "#F0EEE6" }}>
+        <div className="max-w-6xl mx-auto flex flex-col gap-8">
+          {/* section header */}
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div>
+              <span
+                className="text-[10px] font-black uppercase tracking-widest border-2 border-[#0A0A0A] px-2 py-0.5 bg-[#FF4D00] text-white inline-block mb-3"
+                style={{ boxShadow: "2px 2px 0 #0A0A0A" }}
+              >
+                More Sources
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-black uppercase tracking-tighter leading-none">
+                More Free<br />Providers
+              </h2>
+              <p className="text-sm text-[#555] mt-2 max-w-lg">
+                These providers aren&apos;t on OpenRouter but offer generous free tiers.
+                Requires a free API key — no credit card needed.
+              </p>
+            </div>
+            <div className="flex flex-col gap-1 text-right shrink-0">
+              <p className="font-mono text-xs text-[#555]">Sources:</p>
+              <a href="https://github.com/cheahjs/free-llm-api-resources" target="_blank" rel="noopener noreferrer" className="font-mono text-xs font-bold underline hover:text-[#FF4D00]">cheahjs/free-llm-api-resources</a>
+              <a href="https://github.com/mnfst/awesome-free-llm-apis" target="_blank" rel="noopener noreferrer" className="font-mono text-xs font-bold underline hover:text-[#FF4D00]">mnfst/awesome-free-llm-apis</a>
+              <a href="https://freellm.net" target="_blank" rel="noopener noreferrer" className="font-mono text-xs font-bold underline hover:text-[#FF4D00]">freellm.net</a>
+            </div>
+          </div>
+
+          {/* provider grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {FREE_PROVIDERS.map((provider) => (
+              <ProviderCard key={provider.slug} provider={provider} />
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── Footer ── */}
       <footer
         className="px-6 py-6 mt-4"
@@ -219,11 +258,15 @@ export default async function HomePage() {
       >
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="font-mono text-xs text-[#FFE500]">
-            Data sourced from{" "}
-            <a href="https://openrouter.ai" target="_blank" rel="noopener noreferrer" className="underline font-black">
-              OpenRouter
-            </a>
-            . Updated hourly. Free = $0 prompt + $0 completion.
+            Data: {" "}
+            <a href="https://openrouter.ai" target="_blank" rel="noopener noreferrer" className="underline font-black">OpenRouter</a>
+            {" "}·{" "}
+            <a href="https://github.com/cheahjs/free-llm-api-resources" target="_blank" rel="noopener noreferrer" className="underline font-black">cheahjs</a>
+            {" "}·{" "}
+            <a href="https://github.com/mnfst/awesome-free-llm-apis" target="_blank" rel="noopener noreferrer" className="underline font-black">mnfst</a>
+            {" "}·{" "}
+            <a href="https://freellm.net" target="_blank" rel="noopener noreferrer" className="underline font-black">freellm.net</a>
+            . Updated hourly.
           </p>
           <p className="font-mono text-xs text-[#555]">
             free-models.vercel.app

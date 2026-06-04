@@ -1,0 +1,138 @@
+export interface FreeProvider {
+  name: string;
+  slug: string;
+  description: string;
+  baseUrl: string;
+  signupUrl: string;
+  docsUrl: string;
+  color: string;
+  requiresKey: boolean;
+  rateLimits: string;
+  notableModels: string[];
+  modelCount?: number;
+  notes?: string;
+}
+
+export const FREE_PROVIDERS: FreeProvider[] = [
+  {
+    name: "Groq",
+    slug: "groq",
+    description: "Ultra-fast inference on custom LPU hardware. Free tier with generous daily limits.",
+    baseUrl: "https://api.groq.com/openai/v1",
+    signupUrl: "https://console.groq.com/keys",
+    docsUrl: "https://console.groq.com/docs/rate-limits",
+    color: "#F55036",
+    requiresKey: true,
+    rateLimits: "14,400 req/day · 6,000 tokens/min",
+    notableModels: ["llama-4-scout-17b", "llama-4-maverick-17b", "deepseek-r1-distill-llama-70b", "gemma2-9b-it"],
+    modelCount: 12,
+  },
+  {
+    name: "Google AI Studio",
+    slug: "google-ai-studio",
+    description: "Free access to Gemini models. No credit card required.",
+    baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
+    signupUrl: "https://aistudio.google.com",
+    docsUrl: "https://ai.google.dev/gemini-api/docs/rate-limits",
+    color: "#4285F4",
+    requiresKey: true,
+    rateLimits: "500 req/day (Gemini 2.5 Flash) · 250K tokens/min",
+    notableModels: ["gemini-2.5-flash", "gemini-2.0-flash", "gemma-3-27b-it", "gemini-2.5-pro"],
+    modelCount: 15,
+    notes: "Not available in EU/UK/Switzerland. Free prompts may be used by Google.",
+  },
+  {
+    name: "Cerebras",
+    slug: "cerebras",
+    description: "Fastest public inference available. Wafer-scale chip runs models at extreme speed.",
+    baseUrl: "https://api.cerebras.ai/v1",
+    signupUrl: "https://cloud.cerebras.ai",
+    docsUrl: "https://inference-docs.cerebras.ai/introduction",
+    color: "#FF6B35",
+    requiresKey: true,
+    rateLimits: "30 req/min · 60K tokens/min · 1M tokens/day",
+    notableModels: ["llama-4-scout-17b", "llama3.3-70b", "deepseek-r1-distill-llama-70b", "gpt-oss-120b"],
+    modelCount: 8,
+  },
+  {
+    name: "NVIDIA NIM",
+    slug: "nvidia-nim",
+    description: "NVIDIA-hosted inference for leading open models. Generous free credits.",
+    baseUrl: "https://integrate.api.nvidia.com/v1",
+    signupUrl: "https://build.nvidia.com",
+    docsUrl: "https://docs.api.nvidia.com",
+    color: "#76B900",
+    requiresKey: true,
+    rateLimits: "40 req/min · ~1000 free credits/month",
+    notableModels: ["deepseek-r1", "llama-3.3-70b-instruct", "mistral-nemo-12b-instruct", "nemotron-70b-instruct"],
+    modelCount: 20,
+    notes: "Phone number verification required.",
+  },
+  {
+    name: "GitHub Models",
+    slug: "github-models",
+    description: "Free access to top models via GitHub. Requires GitHub Copilot subscription for higher limits.",
+    baseUrl: "https://models.inference.ai.azure.com",
+    signupUrl: "https://github.com/marketplace/models",
+    docsUrl: "https://docs.github.com/en/github-models",
+    color: "#24292E",
+    requiresKey: true,
+    rateLimits: "Low: 15 req/min · 150 req/day (free tier)",
+    notableModels: ["gpt-4.1", "gpt-4o", "o4-mini", "claude-sonnet-4-5", "llama-4-scout"],
+    modelCount: 30,
+    notes: "Higher limits with GitHub Copilot.",
+  },
+  {
+    name: "Mistral",
+    slug: "mistral",
+    description: "Free tier on La Plateforme for Mistral models including Codestral for coding.",
+    baseUrl: "https://api.mistral.ai/v1",
+    signupUrl: "https://console.mistral.ai",
+    docsUrl: "https://docs.mistral.ai",
+    color: "#FF7000",
+    requiresKey: true,
+    rateLimits: "1 req/sec · 500K tokens/month (Codestral free)",
+    notableModels: ["mistral-small-3.2", "codestral-2501", "mistral-nemo", "devstral-small"],
+    modelCount: 6,
+  },
+  {
+    name: "Cohere",
+    slug: "cohere",
+    description: "Free tier for Command and Aya models. Good for RAG and enterprise use-cases.",
+    baseUrl: "https://api.cohere.com/v2",
+    signupUrl: "https://dashboard.cohere.com",
+    docsUrl: "https://docs.cohere.com",
+    color: "#39594D",
+    requiresKey: true,
+    rateLimits: "20 req/min · 1K req/month (trial key)",
+    notableModels: ["command-r-plus", "command-r", "aya-expanse-32b", "command-a"],
+    modelCount: 8,
+  },
+  {
+    name: "Cloudflare Workers AI",
+    slug: "cloudflare",
+    description: "Run models at the edge globally. Free tier via Workers.",
+    baseUrl: "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1",
+    signupUrl: "https://dash.cloudflare.com",
+    docsUrl: "https://developers.cloudflare.com/workers-ai/models/",
+    color: "#F38020",
+    requiresKey: true,
+    rateLimits: "10K neurons/day free · ~500K tokens/day",
+    notableModels: ["llama-3.3-70b-instruct", "deepseek-r1-distill-qwen-32b", "gemma-3-12b-it", "gpt-oss-20b"],
+    modelCount: 50,
+  },
+  {
+    name: "HuggingFace Inference",
+    slug: "huggingface",
+    description: "Free inference API for HuggingFace-hosted models. Large model catalog.",
+    baseUrl: "https://api-inference.huggingface.co",
+    signupUrl: "https://huggingface.co/join",
+    docsUrl: "https://huggingface.co/docs/api-inference",
+    color: "#FFD21E",
+    requiresKey: true,
+    rateLimits: "2K req/day · 500 per-model daily cap",
+    notableModels: ["Qwen2.5-72B-Instruct", "Meta-Llama-3.1-70B-Instruct", "mistral-7b-instruct", "Phi-3-mini"],
+    modelCount: 100,
+    notes: "Registered users only. Data training opt-in for free tier.",
+  },
+];
