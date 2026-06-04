@@ -1,6 +1,6 @@
 import type { ModelEntry, ModelSource } from "@/lib/model-types";
 import { SOURCE_META } from "@/lib/model-types";
-import { STATIC_MODELS } from "@/lib/static-models";
+import { fetchDynamicProviders } from "@/lib/fetch-providers";
 import ModelsGrid from "@/components/ModelsGrid";
 
 export const revalidate = 3600;
@@ -91,8 +91,11 @@ const TICKER_ITEMS = [
 ];
 
 export default async function HomePage() {
-  const [orModels] = await Promise.all([getOpenRouterModels()]);
-  const allModels: ModelEntry[] = [...orModels, ...STATIC_MODELS];
+  const [orModels, providerModels] = await Promise.all([
+    getOpenRouterModels(),
+    fetchDynamicProviders(),
+  ]);
+  const allModels: ModelEntry[] = [...orModels, ...providerModels];
 
   const total = allModels.length;
   const noKeyCount = allModels.filter((m) => !m.requiresKey).length;
